@@ -1,0 +1,391 @@
+{
+  "name": "resume-scanner-ollama",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-scanner",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        0
+      ],
+      "id": "43b9fd6b-1a13-4e38-880e-5529fe7e3db6",
+      "name": "Webhook",
+      "webhookId": "2cf941f0-f066-42f7-b251-7200adaf9321"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        0
+      ],
+      "id": "10d3ba88-8eb3-42da-8e1d-9ccf4281aa38",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of items) {\n  const rawData = item.json;\n  const cleanData = {};\n\n  // Loop through the UPPERCASE keys (PROFILE SUMMARY, CONTACT, etc.)\n  for (const key in rawData) {\n    // 1. Convert key to lowercase and remove spaces (e.g. \"WORK EXPERIENCE\" -> \"work_experience\")\n    // This matches standard database/sheet column names better\n    let cleanKey = key.toLowerCase().replace(/\\s+/g, \"_\"); \n    \n    // special check: map \"technical_skills\" to just \"skills\" if your sheet uses \"skills\"\n    if (cleanKey === \"technical_skills\") cleanKey = \"skills\";\n\n    let value = rawData[key];\n\n    // 2. Flatten Arrays (Education, Skills, etc.) into a string\n    if (Array.isArray(value)) {\n      value = value\n        .filter(entry => entry) // Remove empty/null entries\n        .map(entry => {\n          // If the entry is an object (like a job role), format it nicely\n          if (typeof entry === 'object') {\n             // Joins values like \"Company - Role - 2020\"\n            return Object.values(entry).join(\" - \");\n          }\n          return entry;\n        })\n        .join(\"\\n\"); // distinct lines\n    }\n    \n    // 3. Handle \"CONTACT\" specifically (it might be an object inside)\n    if (cleanKey === 'contact' && typeof value === 'object' && value !== null) {\n       // Extract phone/email if they are inside a \"CONTACT\" object\n       if (value.email) cleanData['email'] = value.email;\n       if (value.phone) cleanData['phone'] = value.phone;\n       if (value.location) cleanData['location'] = value.location;\n       continue; // Skip adding the whole contact object, we just added the pieces\n    }\n\n    // 4. Store in the new clean object\n    cleanData[cleanKey] = value;\n  }\n\n  // 5. Replace the item with the clean data\n  item.json = cleanData;\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "e30bb090-59f6-4135-9481-feb75703e7e4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y",
+          "mode": "list",
+          "cachedResultName": "resume_details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $json.name }}",
+            "skills": "={{ $json.skills.join(\", \") }}\n",
+            "phone": "={{ $json.phone }}",
+            "email": "={{ $json.email }}",
+            "education": "={{ $json.education }}",
+            "experience_summary": "={{ $json.experience_summary }}",
+            "total_experience_years": "={{ $json.total_experience_years }}",
+            "current_location": "={{ $json.current_location }}"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "skills",
+              "displayName": "skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "education",
+              "displayName": "education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "experience_summary",
+              "displayName": "experience_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_experience_years",
+              "displayName": "total_experience_years",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_location",
+              "displayName": "current_location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Profile Summary",
+              "displayName": "Profile Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Work Experience",
+              "displayName": "Work Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Education",
+              "displayName": "Education",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Technical Skills",
+              "displayName": "Technical Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "profile_summary",
+              "displayName": "profile_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "work_experience",
+              "displayName": "work_experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "expertise",
+              "displayName": "expertise",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        992,
+        0
+      ],
+      "id": "cb2ca431-ccfc-422b-8a9c-55379223a515",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UQrkjI9nL3TSR2NW",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a data extraction tool. You do not speak. You do not format text. You only output valid JSON.\n\nHere is an example of how you must behave:\n\nInput Text: \"John Doe, python dev. Email: john@gmail.com. Ph: 555-0199.\"\nOutput:\n{\n  \"name\": \"John Doe\",\n  \"email\": \"john@gmail.com\",\n  \"phone\": \"555-0199\",\n  \"skills\": [\"Python\"],\n  \"education\": null,\n  \"experience_summary\": \"Python developer\",\n  \"total_experience_years\": null,\n  \"current_location\": null\n}\n\nNow, extract the data from the user's text below following exactly the same JSON structure."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=Parse the following resume:  {{ $json.text }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        496,
+        0
+      ],
+      "id": "f98456ec-7ee5-4711-b085-81d6106b3a23",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b",
+        "options": {
+          "format": "json"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        496,
+        240
+      ],
+      "id": "0946d1d1-c730-4115-b571-fa717a3521d2",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "8SJdCZttVtXIq5M4",
+          "name": "Ollama account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cb4717ed-8656-4c89-8800-e2125550ddc5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b9ffd53248b7d087216ce5f1deab5304f15d4c2805778a186d783fe2637650af"
+  },
+  "id": "0_XEPWImlaSjzdJcUFpRl",
+  "tags": []
+}
