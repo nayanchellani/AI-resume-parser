@@ -61,9 +61,10 @@ function App() {
       formData.append('files', file);
     });
 
-    // Valid n8n webhook placeholder - User needs to replace this
-    // Test URL (requires clicking "Test Workflow" in n8n)
-    const WEBHOOK_URL = '/api/n8n/webhook-test/resume-scanner'; 
+    // Dev: use Vite proxy to avoid CORS. Prod (Vercel): call n8n directly.
+    const WEBHOOK_URL = import.meta.env.DEV
+      ? '/api/n8n/webhook/resume-scanner'
+      : 'https://nayan20.app.n8n.cloud/webhook/resume-scanner';
 
     try {
       const response = await fetch(WEBHOOK_URL, {
