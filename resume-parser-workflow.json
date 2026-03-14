@@ -1,281 +1,28 @@
 {
-  "name": "resume-scanner-ollama",
+  "name": "resume-scanner-api-jsonformat ",
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "resume-scanner",
-        "responseMode": "lastNode",
-        "options": {
-          "allowedOrigins": "*"
-        }
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        32,
-        0
-      ],
-      "id": "43b9fd6b-1a13-4e38-880e-5529fe7e3db6",
-      "name": "Webhook",
-      "webhookId": "2cf941f0-f066-42f7-b251-7200adaf9321"
-    },
-    {
-      "parameters": {
         "operation": "pdf",
-        "binaryPropertyName": "files",
         "options": {}
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        272,
-        0
+        64,
+        32
       ],
-      "id": "10d3ba88-8eb3-42da-8e1d-9ccf4281aa38",
+      "id": "952ef774-8582-4b60-bb59-0148c8b91a1a",
       "name": "Extract from File"
     },
     {
       "parameters": {
-        "jsCode": "for (const item of items) {\n  const rawData = item.json;\n  const cleanData = {};\n\n  // Loop through the UPPERCASE keys (PROFILE SUMMARY, CONTACT, etc.)\n  for (const key in rawData) {\n    // 1. Convert key to lowercase and remove spaces (e.g. \"WORK EXPERIENCE\" -> \"work_experience\")\n    // This matches standard database/sheet column names better\n    let cleanKey = key.toLowerCase().replace(/\\s+/g, \"_\"); \n    \n    // special check: map \"technical_skills\" to just \"skills\" if your sheet uses \"skills\"\n    if (cleanKey === \"technical_skills\") cleanKey = \"skills\";\n\n    let value = rawData[key];\n\n    // 2. Flatten Arrays (Education, Skills, etc.) into a string\n    if (Array.isArray(value)) {\n      value = value\n        .filter(entry => entry) // Remove empty/null entries\n        .map(entry => {\n          // If the entry is an object (like a job role), format it nicely\n          if (typeof entry === 'object') {\n             // Joins values like \"Company - Role - 2020\"\n            return Object.values(entry).join(\" - \");\n          }\n          return entry;\n        })\n        .join(\"\\n\"); // distinct lines\n    }\n    \n    // 3. Handle \"CONTACT\" specifically (it might be an object inside)\n    if (cleanKey === 'contact' && typeof value === 'object' && value !== null) {\n       // Extract phone/email if they are inside a \"CONTACT\" object\n       if (value.email) cleanData['email'] = value.email;\n       if (value.phone) cleanData['phone'] = value.phone;\n       if (value.location) cleanData['location'] = value.location;\n       continue; // Skip adding the whole contact object, we just added the pieces\n    }\n\n    // 4. Store in the new clean object\n    cleanData[cleanKey] = value;\n  }\n\n  // 5. Replace the item with the clean data\n  item.json = cleanData;\n}\n\nreturn items;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        816,
-        0
-      ],
-      "id": "e30bb090-59f6-4135-9481-feb75703e7e4",
-      "name": "Code in JavaScript"
-    },
-    {
-      "parameters": {
-        "operation": "appendOrUpdate",
-        "documentId": {
-          "__rl": true,
-          "value": "18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y",
-          "mode": "list",
-          "cachedResultName": "resume_details",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18BK_LveUApqD1RzU-_24oAg5Xu4AxuNY1JyZLIEtj8Y/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "name": "={{ $json.name }}",
-            "skills": "={{ $json.skills.join(\", \") }}\n",
-            "phone": "={{ $json.phone }}",
-            "email": "={{ $json.email }}",
-            "education": "={{ $json.education }}",
-            "experience_summary": "={{ $json.experience_summary }}",
-            "total_experience_years": "={{ $json.total_experience_years }}",
-            "current_location": "={{ $json.current_location }}"
-          },
-          "matchingColumns": [
-            "email"
-          ],
-          "schema": [
-            {
-              "id": "name",
-              "displayName": "name",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "email",
-              "displayName": "email",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "phone",
-              "displayName": "phone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "skills",
-              "displayName": "skills",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "education",
-              "displayName": "education",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "experience_summary",
-              "displayName": "experience_summary",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "total_experience_years",
-              "displayName": "total_experience_years",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "current_location",
-              "displayName": "current_location",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "Profile Summary",
-              "displayName": "Profile Summary",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "Work Experience",
-              "displayName": "Work Experience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "Contact",
-              "displayName": "Contact",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "Education",
-              "displayName": "Education",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "Technical Skills",
-              "displayName": "Technical Skills",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "profile_summary",
-              "displayName": "profile_summary",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "work_experience",
-              "displayName": "work_experience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "expertise",
-              "displayName": "expertise",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        992,
-        0
-      ],
-      "id": "cb2ca431-ccfc-422b-8a9c-55379223a515",
-      "name": "Append or update row in sheet",
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "UQrkjI9nL3TSR2NW",
-          "name": "Google Sheets account 2"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
         "promptType": "define",
-        "text": "={{ $json.text }}",
-        "hasOutputParser": true,
+        "text": "=Parse the following resume:  {{ $json.text }}",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are a data extraction tool. You do not speak. You do not format text. You only output valid JSON.\n\nHere is an example of how you must behave:\n\nInput Text: \"John Doe, python dev. Email: john@gmail.com. Ph: 555-0199.\"\nOutput:\n{\n  \"name\": \"John Doe\",\n  \"email\": \"john@gmail.com\",\n  \"phone\": \"555-0199\",\n  \"skills\": [\"Python\"],\n  \"education\": null,\n  \"experience_summary\": \"Python developer\",\n  \"total_experience_years\": null,\n  \"current_location\": null\n}\n\nNow, extract the data from the user's text below following exactly the same JSON structure."
+              "message": "=You are a strict resume parsing engine.\n\nYour task is to extract structured candidate data from raw resume text.\n\nCRITICAL RULES:\n- Output ONLY valid JSON.\n- Do NOT include markdown.\n- Do NOT include explanations.\n- Do NOT wrap output in code blocks.\n- Do NOT add extra fields.\n- All keys must exist in the output.\n- If a scalar field is missing, return null.\n- If an array field is missing, return [].\n- If a nested array object field is missing, return null for its properties.\n- Dates must be in ISO format: YYYY-MM-DD.\n- All numeric values must be numbers, not strings.\n- All phone numbers must be returned as strings.\n- Boolean values must be true or false (not strings).\n- Do NOT guess values that are not explicitly mentioned in the resume.\n\nRequired JSON structure:\n\n{\n  \"full_name\": string | null,\n  \"email\": string | null,\n  \"secondary_email\": string | null,\n  \"phone_primary\": string | null,\n  \"phone_secondary\": string | null,\n  \"whatsapp_number\": string | null,\n  \"date_of_birth\": string | null,\n  \"gender\": string | null,\n  \"marital_status\": string | null,\n  \"current_address\": string | null,\n  \"permanent_address\": string | null,\n  \"city\": string | null,\n  \"state\": string | null,\n  \"country\": string | null,\n  \"pincode\": number | null,\n  \"linkedin_url\": string | null,\n  \"portfolio_url\": string | null,\n  \"github_url\": string | null,\n  \"current_company\": string | null,\n  \"current_designation\": string | null,\n  \"employment_type\": string | null,\n  \"job_type_preference\": string | null,\n  \"work_mode_preference\": string | null,\n  \"source\": null,\n  \"status\": null,\n  \"pipeline_stage\": null,\n  \"declaration_status\": null,\n  \"bgv_status\": null,\n  \"notes\": null,\n  \"current_ctc\": number | null,\n  \"expected_ctc_min\": number | null,\n  \"expected_ctc_max\": number | null,\n  \"total_experience_years\": number | null,\n  \"relevant_experience_years\": number | null,\n  \"notice_period_days\": number | null,\n  \"last_working_day\": string | null,\n  \"preferred_locations\": string[],\n  \"key_skills\": string[],\n  \"primary_skills\": string[],\n  \"secondary_skills\": string[],\n  \"languages_known\": string[],\n  \"tags\": string[],\n  \"education\": [\n    {\n      \"qualification_type\": string | null,\n      \"degree_name\": string | null,\n      \"specialization\": string | null,\n      \"institution_name\": string | null,\n      \"board_university\": string | null,\n      \"location\": string | null,\n      \"start_year\": number | null,\n      \"end_year\": number | null,\n      \"is_completed\": boolean | null,\n      \"grade_type\": string | null,\n      \"grade_value\": number | null,\n      \"out_of\": number | null,\n      \"achievements\": string | null\n    }\n  ],\n  \"experience\": [\n    {\n      \"company_name\": string | null,\n      \"designation\": string | null,\n      \"department\": string | null,\n      \"employment_type\": string | null,\n      \"location\": string | null,\n      \"start_date\": string | null,\n      \"end_date\": string | null,\n      \"is_current\": boolean | null,\n      \"ctc\": number | null,\n      \"reporting_to\": string | null,\n      \"team_size\": number | null,\n      \"responsibilities\": string | null,\n      \"key_achievements\": string | null,\n      \"reason_for_leaving\": string | null,\n      \"verification_status\": string | null\n    }\n  ],\n  \"projects\": [\n    {\n      \"project_name\": string | null,\n      \"project_description\": string | null,\n      \"technologies_used\": string | null,\n      \"start_date\": string | null,\n      \"end_date\": string | null,\n      \"is_current_project\": boolean | null,\n      \"project_url\": string | null,\n      \"role_in_project\": string | null,\n      \"team_size\": number | null,\n      \"client_name\": string | null,\n      \"project_duration_months\": number | null,\n      \"achievements\": string | null\n    }\n  ]\n}\n\nReturn strictly the JSON object.\n"
             },
             {
               "type": "HumanMessagePromptTemplate",
@@ -288,64 +35,373 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        496,
-        0
+        224,
+        240
       ],
-      "id": "f98456ec-7ee5-4711-b085-81d6106b3a23",
+      "id": "0d319bc9-72a8-48f2-a5be-5e6a3675c07f",
       "name": "Basic LLM Chain"
     },
     {
       "parameters": {
-        "model": "qwen2.5:7b",
-        "options": {
-          "format": "json"
-        }
+        "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        496,
-        240
+        224,
+        400
       ],
-      "id": "0946d1d1-c730-4115-b571-fa717a3521d2",
-      "name": "Ollama Model",
+      "id": "feaf4aa8-d69d-4a93-bfba-3d4ab263c1f8",
+      "name": "Google Gemini Chat Model",
       "credentials": {
-        "ollamaApi": {
-          "id": "8SJdCZttVtXIq5M4",
-          "name": "Ollama account 2"
+        "googlePalmApi": {
+          "id": "aLsbVGw98L5DGtQu",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn $input.all().map(item => {\n  try {\n    // 1️⃣ The Fix: We grab the text for THIS specific item in the batch loop\n    // Common Mistake: Using $input.first() here drops all items except the first one.\n    const rawOutput = item.json.text;\n\n    if (!rawOutput) {\n      throw new Error(\"No LLM output received\");\n    }\n\n    // 2️⃣ Clean markdown if Gemini accidentally formats it as a code block\n    const cleaned = rawOutput.replace(/```json|```/g, \"\").trim();\n\n    // 3️⃣ Parse JSON safely\n    let parsed;\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (err) {\n      // Brutally honest tip: Log the start of the string so you can debug *why* it failed\n      throw new Error(`Invalid JSON from LLM. Output started with: ${cleaned.substring(0, 50)}...`);\n    }\n\n    // 4️⃣ Ensure required array fields always exist\n    const requiredArrays = [\n      \"preferred_locations\", \"key_skills\", \"primary_skills\",\n      \"secondary_skills\", \"languages_known\", \"tags\",\n      \"education\", \"experience\", \"projects\"\n    ];\n\n    requiredArrays.forEach(field => {\n      if (!Array.isArray(parsed[field])) {\n        parsed[field] = [];\n      }\n    });\n\n    // 5️⃣ Ensure all top-level scalar fields exist\n    const requiredScalars = [\n      \"full_name\", \"email\", \"secondary_email\", \"phone_primary\",\n      \"phone_secondary\", \"whatsapp_number\", \"date_of_birth\", \"gender\",\n      \"marital_status\", \"current_address\", \"permanent_address\", \"city\",\n      \"state\", \"country\", \"pincode\", \"linkedin_url\", \"portfolio_url\",\n      \"github_url\", \"current_company\", \"current_designation\",\n      \"employment_type\", \"job_type_preference\", \"work_mode_preference\",\n      \"source\", \"status\", \"pipeline_stage\", \"declaration_status\",\n      \"bgv_status\", \"notes\", \"current_ctc\", \"expected_ctc_min\",\n      \"expected_ctc_max\", \"total_experience_years\",\n      \"relevant_experience_years\", \"notice_period_days\", \"last_working_day\"\n    ];\n\n    requiredScalars.forEach(field => {\n      if (!(field in parsed)) {\n        parsed[field] = null;\n      }\n    });\n\n    // 6️⃣ Add metadata (very important for bulk processing)\n    // Heads up: Langchain nodes in n8n sometimes strip original 'id' fields.\n    // If this outputs \"ID_MISSING\", you'll need to pass the ID via workflow variables or a merge node.\n    parsed._meta = {\n      processed_at: new Date().toISOString(),\n      source_file_id: item.json.id || \"ID_MISSING\",\n      success: true\n    };\n\n    // Return the formatted object for THIS item to the pipeline\n    return { json: parsed };\n\n  } catch (error) {\n    // ⚠️ CRITICAL FAILSAFE: If one resume fails, do NOT crash the batch.\n    // We return an error object so the next node can filter it out or log it.\n    return {\n      json: {\n        error: true,\n        message: error.message,\n        raw_output: item.json?.text || null,\n        _meta: {\n          processed_at: new Date().toISOString(),\n          success: false\n        }\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        240
+      ],
+      "id": "25ed67a2-5425-4b1c-894e-ffdda0271817",
+      "name": "Code in JavaScript",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        96
+      ],
+      "id": "ab37d8fa-3fe6-4b0a-83b8-c5964b9456db",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -848,
+        368
+      ],
+      "id": "cb81e6f7-97e6-4ac5-ae63-a1815f1914d5",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "name": "={{$binary.data.fileName}}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "15iNPzko9DKAOvUH5SqlbrN-GeFQv3zu9",
+          "mode": "list",
+          "cachedResultName": "Resume_analyse_output",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15iNPzko9DKAOvUH5SqlbrN-GeFQv3zu9"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        976,
+        672
+      ],
+      "id": "961b60a1-604f-4fb4-a52e-8e70e17c2927",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iLQQzTwtKPEHLxNp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => {\n  const jsonString = JSON.stringify(item.json, null, 2);\n\n  // Dynamically pull the exact filename from the Download node\n  const originalItem = $items(\"Download file\")[0]; \n  const originalName = originalItem && originalItem.json.name \n    ? originalItem.json.name.replace(/\\.pdf$/i, '') \n    : `resume_${Date.now()}`;\n\n  return {\n    json: {},\n    binary: {\n      data: {\n        data: Buffer.from(jsonString).toString('base64'),\n        mimeType: 'application/json',\n        fileName: `${originalName}.json` // Now matches the PDF perfectly!\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        240
+      ],
+      "id": "6075a76e-03da-47b9-8df7-8fc0534e3e91",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "'16RwR-KobIYW2ohWA2tx_47K1Q4bGh52K' in parents and (mimeType='application/pdf' or mimeType='image/jpeg' or mimeType='image/png' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document') and trashed=false",
+        "returnAll": true,
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1264,
+        96
+      ],
+      "id": "40350fa0-f117-4f43-a08d-6d0b56620706",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iLQQzTwtKPEHLxNp",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{$json.id}}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -656,
+        384
+      ],
+      "id": "0a7bab36-633c-4b56-9544-ce42854cdb1f",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iLQQzTwtKPEHLxNp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        32
+      ],
+      "id": "bf6de829-85c2-4030-9c94-8b43309d3f29",
+      "name": "Wait",
+      "webhookId": "d9bfacc3-9133-4e22-ae01-34974a04d974"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "'15iNPzko9DKAOvUH5SqlbrN-GeFQv3zu9' in parents and trashed=false",
+        "returnAll": true,
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1072,
+        96
+      ],
+      "id": "46566ed8-0580-4643-a8f4-86798a71858c",
+      "name": "Search files and folders1",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iLQQzTwtKPEHLxNp",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Drop this into 'Code in JavaScript2' (The Deduplicator)\n\n// 1️⃣ Grab the data from the specific previous nodes by their names\nconst allPdfs = $items(\"Search files and folders\"); \nconst parsedJsons = $items(\"Search files and folders1\");\n\n// 2️⃣ Create a fast-lookup list of resumes we've already parsed\nconst finishedNames = new Set(\n  parsedJsons.map(item => {\n    return (item.json.name || \"\").replace(/\\.json$/i, \"\").toLowerCase().trim();\n  })\n);\n\n// 3️⃣ Filter the original PDF list. \nconst remainingResumes = allPdfs.filter(pdf => {\n  const pdfName = (pdf.json.name || \"\").replace(/\\.pdf$/i, \"\").toLowerCase().trim();\n  return !finishedNames.has(pdfName);\n});\n\n// 4️⃣ Deep clone the objects to strip n8n's internal Proxy wrappers\n// This specifically prevents the \"A 'json' property isn't an object\" error\nreturn remainingResumes.map(item => ({\n  json: JSON.parse(JSON.stringify(item.json))\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        368
+      ],
+      "id": "1d23a890-1a60-4926-a1a4-3ac6787cc6f9",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.data.mimeType }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "61f579a6-587f-498a-9209-41d335f24490"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a4f4d69a-24ee-42fb-842d-6e56f66e41ef",
+                    "leftValue": "={{ $binary.data.mimeType }}",
+                    "rightValue": "doc",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "61352e36-b583-4e23-8d81-23dba8e6ad0d",
+                    "leftValue": "={{ $binary.data.mimeType }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        368
+      ],
+      "id": "279009c0-f092-4013-b27d-65371a3b74ad",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "authentication": "apiKey",
+        "outputFormat": "pdf"
+      },
+      "type": "@cloudconvert/n8n-nodes-cloudconvert.cloudConvert",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        352
+      ],
+      "id": "5818abdd-3cdc-48f4-a0d1-0e60749b594a",
+      "name": "Convert a file",
+      "credentials": {
+        "cloudConvertApi": {
+          "id": "2UoqA6McgZPTFqUA",
+          "name": "CloudConvert account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-lite-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.1-flash-lite-preview"
+        },
+        "text": "You are a strict resume parsing engine.\nYour task is to extract structured candidate data from the provided document or image.\n\nCRITICAL RULES:\n- Output ONLY valid JSON.\n- Do NOT include markdown wrappers (no ```json or ```).\n- Do NOT include explanations, preambles, or postscripts.\n- All keys from the required structure MUST exist in the output.\n- If a scalar field (string/number) is missing, return null.\n- If an array field is missing, return [].\n- Dates must be in ISO format: YYYY-MM-DD.\n- All phone numbers must be strings.\n- Do NOT hallucinate or guess values not explicitly visible in the document.\n\nRequired JSON structure:\n{\n  \"full_name\": \"string | null\",\n  \"email\": \"string | null\",\n  \"secondary_email\": \"string | null\",\n  \"phone_primary\": \"string | null\",\n  \"whatsapp_number\": \"string | null\",\n  \"date_of_birth\": \"string | null\",\n  \"gender\": \"string | null\",\n  \"current_address\": \"string | null\",\n  \"city\": \"string | null\",\n  \"state\": \"string | null\",\n  \"linkedin_url\": \"string | null\",\n  \"portfolio_url\": \"string | null\",\n  \"github_url\": \"string | null\",\n  \"current_company\": \"string | null\",\n  \"current_designation\": \"string | null\",\n  \"total_experience_years\": \"number | null\",\n  \"preferred_locations\": [\"string\"],\n  \"key_skills\": [\"string\"],\n  \"education\": [\n    {\n      \"degree_name\": \"string | null\",\n      \"specialization\": \"string | null\",\n      \"institution_name\": \"string | null\",\n      \"start_year\": \"number | null\",\n      \"end_year\": \"number | null\"\n    }\n  ],\n  \"experience\": [\n    {\n      \"company_name\": \"string | null\",\n      \"designation\": \"string | null\",\n      \"start_date\": \"string | null\",\n      \"end_date\": \"string | null\",\n      \"is_current\": \"boolean | null\",\n      \"responsibilities\": \"string | null\"\n    }\n  ]\n}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        592
+      ],
+      "id": "d98f5705-4a4a-420c-9f48-6be0f72407a3",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aLsbVGw98L5DGtQu",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n\nreturn $input.all().map(item => {\n  try {\n    // 1️⃣ Dedicated mapping: We know exactly where the Gemini Vision data lives\n    const rawOutput = item.json.content?.parts?.[0]?.text;\n\n    if (!rawOutput) {\n      throw new Error(\"No image data extracted by Gemini. Check the prompt or image quality.\");\n    }\n\n    // 2️⃣ Clean markdown\n    const cleaned = rawOutput.replace(/```json|```/g, \"\").trim();\n\n    // 3️⃣ Parse JSON\n    let parsed;\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (err) {\n      throw new Error(`Invalid JSON from Gemini Vision. Output started with: ${cleaned.substring(0, 50)}...`);\n    }\n\n    // 4️⃣ Ensure required array fields\n    const requiredArrays = [\n      \"preferred_locations\", \"key_skills\", \"primary_skills\",\n      \"secondary_skills\", \"languages_known\", \"tags\",\n      \"education\", \"experience\", \"projects\"\n    ];\n    requiredArrays.forEach(field => {\n      if (!Array.isArray(parsed[field])) parsed[field] = [];\n    });\n\n    // 5️⃣ Ensure scalar fields\n    const requiredScalars = [\n      \"full_name\", \"email\", \"secondary_email\", \"phone_primary\",\n      \"phone_secondary\", \"whatsapp_number\", \"date_of_birth\", \"gender\",\n      \"marital_status\", \"current_address\", \"permanent_address\", \"city\",\n      \"state\", \"country\", \"pincode\", \"linkedin_url\", \"portfolio_url\",\n      \"github_url\", \"current_company\", \"current_designation\",\n      \"employment_type\", \"job_type_preference\", \"work_mode_preference\",\n      \"source\", \"status\", \"pipeline_stage\", \"declaration_status\",\n      \"bgv_status\", \"notes\", \"current_ctc\", \"expected_ctc_min\",\n      \"expected_ctc_max\", \"total_experience_years\",\n      \"relevant_experience_years\", \"notice_period_days\", \"last_working_day\"\n    ];\n    requiredScalars.forEach(field => {\n      if (!(field in parsed)) parsed[field] = null;\n    });\n\n    // 6️⃣ Add metadata\n    parsed._meta = {\n      processed_at: new Date().toISOString(),\n      source_file_id: item.json.id || \"ID_MISSING\",\n      success: true\n    };\n\n    return { json: parsed };\n\n  } catch (error) {\n    return {\n      json: {\n        error: true,\n        message: error.message,\n        raw_output: item.json?.content?.parts?.[0]?.text || null,\n        _meta: { processed_at: new Date().toISOString(), success: false }\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        592
+      ],
+      "id": "5a430cee-1b69-4cb7-bf07-0a5660ad491d",
+      "name": "Code in JavaScript3"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Extract from File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Extract from File": {
       "main": [
         [
           {
-            "node": "Basic LLM Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript": {
-      "main": [
-        [
-          {
-            "node": "Append or update row in sheet",
+            "node": "Wait",
             "type": "main",
             "index": 0
           }
@@ -363,12 +419,181 @@
         ]
       ]
     },
-    "Ollama Model": {
+    "Google Gemini Chat Model": {
       "ai_languageModel": [
         [
           {
             "node": "Basic LLM Chain",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
             "index": 0
           }
         ]
@@ -381,11 +606,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "cb4717ed-8656-4c89-8800-e2125550ddc5",
+  "versionId": "d66bc38e-3b37-42d6-98f3-a95716b7d363",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "b9ffd53248b7d087216ce5f1deab5304f15d4c2805778a186d783fe2637650af"
+    "instanceId": "ad900de3e944f4fadddddc59aa67fd8a71714eaf775053907b165ab4a5aeed21"
   },
-  "id": "0_XEPWImlaSjzdJcUFpRl",
+  "id": "20iViEO3BRNXqndF",
   "tags": []
 }
