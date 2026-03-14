@@ -4,7 +4,7 @@ Most resume parsers break the second a candidate uploads a Word document or a sc
 
 This is an enterprise-grade, fully automated data extraction pipeline built in n8n. It monitors a Google Drive folder, dynamically routes files based on their MIME type (PDF, DOCX, PNG/JPEG), and uses Google Gemini's Multimodal AI to extract candidate data into a strictly validated, production-ready JSON format.
 
-
+![n8n Architecture](./assets/workflow.png)
 
 ##  The Architecture (How it works)
 
